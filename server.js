@@ -4,6 +4,7 @@ const path = require('path');
 const makeWASocket = require('@whiskeysockets/baileys').default;
 const { useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const qrcode = require('qrcode');
+
 const app = express();
 const PORT = process.env.PORT || 10000;
 
@@ -11,9 +12,10 @@ app.use(express.static('public'));
 
 const sessionPath = path.join(__dirname, 'sessions', 'arslan-md');
 
-// Ensure session directory exists
+// Make sure session folder exists
 if (!fs.existsSync(sessionPath)) {
   fs.mkdirSync(sessionPath, { recursive: true });
+  console.log('[INFO] Created sessions folder:', sessionPath);
 }
 
 app.get('/', (req, res) => {
@@ -31,34 +33,46 @@ app.get('/generate-qr', async (req, res) => {
     let qrSent = false;
 
     sock.ev.on('connection.update', async (update) => {
-      const { connection, qr } = update;
+      const { qr, connection } = update;
+      console.log('[DEBUG] Connection update:', update);
 
       if (qr && !qrSent) {
-        const qrImage = await qrcode.toDataURL(qr);
-        qrSent = true;
-        return res.json({ qr: qrImage });
+        try {
+          const qrImage = await qrcode.toDataURL(qr);
+          qrSent = true;
+          console.log('[INFO] QR code generated, sending to client.');
+          return res.json({ qr: qrImage });
+        } catch (qrErr) {
+          console.error('[ERROR] Failed to generate QR image:', qrErr);
+          if (!res.headersSent) {
+            return res.status(500).json({ error: 'Failed to generate QR image' });
+          }
+        }
       }
 
       if (connection === 'open') {
-        console.log('✅ WhatsApp connected');
+        console.log('[INFO] WhatsApp connection opened');
       }
 
       if (connection === 'close') {
-        console.log('❌ Connection closed');
+        console.log('[INFO] WhatsApp connection closed');
       }
     });
 
     sock.ev.on('creds.update', saveCreds);
 
-    // Timeout if QR not received in 10 seconds
+    // Timeout: if QR not generated in 15 seconds
     setTimeout(() => {
       if (!qrSent) {
-        res.status(408).json({ error: 'QR generation timed out' });
+        console.warn('[WARN] QR code not generated within 15 seconds.');
+        if (!res.headersSent) {
+          res.status(408).json({ error: 'QR code generation timeout' });
+        }
       }
-    }, 10000);
+    }, 15000);
 
   } catch (err) {
-    console.error('QR Error:', err);
+    console.error('[ERROR] /generate-qr route error:', err);
     if (!res.headersSent) {
       res.status(500).json({ error: 'Internal Server Error' });
     }
