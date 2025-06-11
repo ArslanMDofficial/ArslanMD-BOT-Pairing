@@ -1,97 +1,58 @@
 const express = require('express');
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
-const fs = require('fs');
-const path = require('path');
 const qrcode = require('qrcode');
+const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
+const path = require('path');
+const fs = require('fs-extra');
 
 const app = express();
-app.use(express.json());
-app.use(express.static('public'));
+const PORT = 10000;
 
-const PORT = process.env.PORT || 10000;
+app.use(express.static(path.join(__dirname, 'public')));
 
-const sessionFolder = path.join(__dirname, 'sessions');
-const sessionPath = path.join(sessionFolder, 'arslan-md');
+// Ensure sessions directory exists
+const SESSIONS_DIR = path.join(__dirname, 'sessions');
+fs.ensureDirSync(SESSIONS_DIR);
 
-try {
-  // Agar sessionPath pe file hai, to delete karo
-  if (fs.existsSync(sessionPath) && !fs.lstatSync(sessionPath).isDirectory()) {
-    fs.unlinkSync(sessionPath);
-  }
-  // Agar directory nahi hai to banao
-  if (!fs.existsSync(sessionPath)) {
-    fs.mkdirSync(sessionPath, { recursive: true });
-  }
-} catch (err) {
-  console.error('[ERROR] Failed to prepare session directory:', err);
-}
-
-let sock, state, saveState;
+let sock;
+let qrCodeDataUrl = '';
 
 async function startWhatsApp() {
-  ({ state, saveState } = await useMultiFileAuthState(sessionPath));
+  // Use Multi File Auth State (session stored in sessions/arslan-md)
+  const { state, saveCreds } = await useMultiFileAuthState(path.join(SESSIONS_DIR, 'arslan-md'));
 
   sock = makeWASocket({
     auth: state,
     printQRInTerminal: false,
   });
 
-  sock.ev.on('connection.update', (update) => {
-    const { connection, qr, lastDisconnect } = update;
-
+  sock.ev.on('connection.update', async (update) => {
+    const { connection, qr } = update;
     if (qr) {
-      console.log('📱 QR Code generated.');
-      // Emit QR to frontend or handle here
-      // If you want to serve it via endpoint, save or broadcast the qr string
+      // Generate base64 QR image
+      qrCodeDataUrl = await qrcode.toDataURL(qr);
+      console.log('QR Code updated');
     }
-
-    if (connection === 'open') {
-      console.log('✅ Connected to WhatsApp!');
-    }
-
     if (connection === 'close') {
-      const status = lastDisconnect?.error?.output?.statusCode;
-      if (status === DisconnectReason.loggedOut) {
-        console.log('⚠️ Logged out, deleting session...');
-        // Delete session folder/files to force re-authentication next time
-        fs.rmSync(sessionPath, { recursive: true, force: true });
-      }
-      console.log('🔄 Reconnecting...');
+      console.log('Connection closed, reconnecting...');
       startWhatsApp();
+    } else if (connection === 'open') {
+      console.log('WhatsApp connected!');
+      qrCodeDataUrl = ''; // Clear QR code after connect
     }
   });
 
-  sock.ev.on('creds.update', saveState);
+  sock.ev.on('creds.update', saveCreds);
 }
 
-startWhatsApp().catch(console.error);
-
-// API route to get QR code as base64
-app.get('/generate-qr', async (req, res) => {
-  if (!sock) return res.status(503).send({ error: 'Socket not ready' });
-
-  sock.ev.once('connection.update', async (update) => {
-    if (update.qr) {
-      try {
-        const qrDataUrl = await qrcode.toDataURL(update.qr);
-        res.send({ qr: qrDataUrl });
-      } catch (err) {
-        console.error('QR Generation error:', err);
-        res.status(500).send({ error: 'Failed to generate QR code' });
-      }
-    }
-  });
-
-  // Trigger QR by reconnecting (if not connected)
-  if (sock.authState?.creds?.me) {
-    res.send({ message: 'Already connected, no QR needed' });
-  } else {
-    // Disconnect to trigger new QR
-    sock.logout().catch(() => {});
-    startWhatsApp();
+// API route to get QR code image as base64
+app.get('/generate-qr', (req, res) => {
+  if (!qrCodeDataUrl) {
+    return res.json({ status: false, message: 'QR code not generated yet' });
   }
+  res.json({ status: true, qr: qrCodeDataUrl });
 });
 
 app.listen(PORT, () => {
   console.log(`🌐 Server running at http://localhost:${PORT}`);
+  startWhatsApp();
 });
