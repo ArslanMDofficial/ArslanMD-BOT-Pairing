@@ -1,91 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Arslan-MD - WhatsApp QR Pairing</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arslan-MD Bot Pairing</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
     body {
-      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #ffffff;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      padding: 20px;
-    }
-
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 20px;
-      background: linear-gradient(to right, #00c6ff, #0072ff);
-      -webkit-background-clip: text;
-      color: transparent;
-    }
-
-    #qr-box {
-      background: #1e1e2f;
-      padding: 20px;
-      border-radius: 16px;
-      box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+      font-family: Arial, sans-serif;
       text-align: center;
+      background: #111;
+      color: #fff;
     }
-
-    #qr-img {
-      width: 280px;
-      height: 280px;
-      margin-bottom: 10px;
+    .container {
+      margin-top: 80px;
     }
-
-    p {
-      font-size: 1rem;
-      color: #ccc;
+    button {
+      padding: 12px 20px;
+      font-size: 18px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
     }
-
-    footer {
+    iframe {
       margin-top: 30px;
-      font-size: 0.9rem;
-      color: #888;
+      border: none;
+      width: 350px;
+      height: 400px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px #28a745;
     }
   </style>
 </head>
 <body>
-  <h1>Scan to Pair WhatsApp</h1>
-  <div id="qr-box">
-    <p>⏳ Generating QR Code...</p>
+  <div class="container">
+    <h1>🔗 Arslan-MD QR Pairing</h1>
+    <p>QR Code generate karne ke liye button dabayein:</p>
+    <button onclick="loadQR()">Generate QR Code</button>
+    <div id="qr-box"></div>
   </div>
 
-  <footer>
-    &copy; 2025 Arslan-MD | Powered by Baileys
-  </footer>
-
   <script>
-    async function fetchQR() {
-      try {
-        const res = await fetch('/get-qr');
-        const data = await res.json();
-        const box = document.getElementById('qr-box');
-
-        if (data.success) {
-          box.innerHTML = `<img id="qr-img" src="${data.qr}" alt="QR Code"><p>📱 Scan this with WhatsApp</p>`;
-        } else {
-          box.innerHTML = `<p>⏳ ${data.message}...</p>`;
-          setTimeout(fetchQR, 3000);
-        }
-      } catch (err) {
-        document.getElementById('qr-box').innerHTML = `<p>❌ Failed to fetch QR. Try again.</p>`;
-      }
+    function loadQR() {
+      document.getElementById("qr-box").innerHTML = '<iframe src="/qr"></iframe>';
     }
-
-    fetchQR();
   </script>
 </body>
 </html>
