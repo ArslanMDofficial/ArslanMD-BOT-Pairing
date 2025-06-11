@@ -2,29 +2,37 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Arslan-MD QR Pairing</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WhatsApp Bot Pairing</title>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 2rem; }
-    img { margin-top: 2rem; border: 1px solid #ccc; padding: 10px; border-radius: 10px; }
-    button { padding: 10px 20px; font-size: 16px; margin-top: 1rem; }
+    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+    img { margin-top: 20px; width: 300px; height: 300px; border: 2px solid #333; }
   </style>
 </head>
 <body>
-  <h1>🔗 Pair your WhatsApp with Arslan-MD</h1>
-  <button onclick="generateQR()">Generate QR</button>
-  <div id="qr-container"></div>
+  <h1>Scan the QR Code to Pair WhatsApp Bot</h1>
+  <img id="qrImage" src="" alt="QR Code will appear here" />
+  <p id="status">Waiting for QR code...</p>
 
   <script>
-    async function generateQR() {
-      document.getElementById('qr-container').innerHTML = '⏳ Generating QR...';
+    async function fetchQR() {
       const res = await fetch('/generate-qr');
       const data = await res.json();
-      if (data.qr) {
-        document.getElementById('qr-container').innerHTML = `<img src="${data.qr}" alt="Scan this QR with WhatsApp" />`;
+      const qrImg = document.getElementById('qrImage');
+      const status = document.getElementById('status');
+
+      if (data.status && data.qr) {
+        qrImg.src = data.qr;
+        status.textContent = 'Scan this QR code with your WhatsApp app';
       } else {
-        document.getElementById('qr-container').innerHTML = '❌ Failed to generate QR';
+        status.textContent = 'QR code not available yet. Retrying...';
+        qrImg.src = '';
       }
     }
+
+    // Poll every 3 seconds for QR code updates
+    setInterval(fetchQR, 3000);
+    fetchQR();
   </script>
 </body>
 </html>
