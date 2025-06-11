@@ -9,24 +9,17 @@ const PORT = process.env.PORT || 10000;
 
 app.use(express.static('public'));
 
-// Ensure sessions/arslan-md exists and is a directory
 const sessionPath = path.join(__dirname, 'sessions', 'arslan-md');
 
-if (fs.existsSync(sessionPath)) {
-  if (!fs.statSync(sessionPath).isDirectory()) {
-    fs.unlinkSync(sessionPath); // remove file if it's not a directory
-    fs.mkdirSync(sessionPath, { recursive: true });
-  }
-} else {
+// Ensure session directory exists
+if (!fs.existsSync(sessionPath)) {
   fs.mkdirSync(sessionPath, { recursive: true });
 }
 
-// Serve main page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// API route to generate QR
 app.get('/generate-qr', async (req, res) => {
   try {
     const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
@@ -35,17 +28,19 @@ app.get('/generate-qr', async (req, res) => {
       printQRInTerminal: false,
     });
 
+    let qrSent = false;
+
     sock.ev.on('connection.update', async (update) => {
       const { connection, qr } = update;
 
-      if (qr) {
+      if (qr && !qrSent) {
         const qrImage = await qrcode.toDataURL(qr);
-        res.json({ qr: qrImage });
+        qrSent = true;
+        return res.json({ qr: qrImage });
       }
 
       if (connection === 'open') {
         console.log('✅ WhatsApp connected');
-        await sock.sendMessage(sock.user.id, { text: '🤖 Bot linked successfully!' });
       }
 
       if (connection === 'close') {
@@ -55,13 +50,21 @@ app.get('/generate-qr', async (req, res) => {
 
     sock.ev.on('creds.update', saveCreds);
 
+    // Timeout if QR not received in 10 seconds
+    setTimeout(() => {
+      if (!qrSent) {
+        res.status(408).json({ error: 'QR generation timed out' });
+      }
+    }, 10000);
+
   } catch (err) {
     console.error('QR Error:', err);
-    res.status(500).json({ error: 'Failed to generate QR code' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
   }
 });
 
-// Start the server
 app.listen(PORT, () => {
   console.log(`🌐 Server running at http://localhost:${PORT}`);
 });
