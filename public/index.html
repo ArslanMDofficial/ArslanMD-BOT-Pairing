@@ -4,45 +4,26 @@
   <meta charset="UTF-8" />
   <title>Arslan-MD QR Pairing</title>
   <style>
-    body {
-      font-family: sans-serif;
-      background: #111;
-      color: #fff;
-      text-align: center;
-      padding: 50px;
-    }
-    .qr-box {
-      background: #222;
-      padding: 20px;
-      border-radius: 10px;
-      display: inline-block;
-      margin-top: 30px;
-    }
-    button {
-      padding: 10px 20px;
-      border: none;
-      background: #00e676;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 20px;
-    }
+    body { font-family: sans-serif; text-align: center; padding: 2rem; }
+    img { margin-top: 2rem; border: 1px solid #ccc; padding: 10px; border-radius: 10px; }
+    button { padding: 10px 20px; font-size: 16px; margin-top: 1rem; }
   </style>
 </head>
 <body>
-  <h1>🤖 Arslan-MD WhatsApp Bot</h1>
-  <p>Click below to generate QR and scan with WhatsApp.</p>
-  <button onclick="loadQR()">Generate QR</button>
-  <div class="qr-box" id="qrBox"></div>
+  <h1>🔗 Pair your WhatsApp with Arslan-MD</h1>
+  <button onclick="generateQR()">Generate QR</button>
+  <div id="qr-container"></div>
 
   <script>
-    function loadQR() {
-      document.getElementById("qrBox").innerHTML = "⏳ Loading QR...";
-      fetch("/qr")
-        .then((res) => res.text())
-        .then((html) => {
-          document.getElementById("qrBox").innerHTML = html;
-        });
+    async function generateQR() {
+      document.getElementById('qr-container').innerHTML = '⏳ Generating QR...';
+      const res = await fetch('/generate-qr');
+      const data = await res.json();
+      if (data.qr) {
+        document.getElementById('qr-container').innerHTML = `<img src="${data.qr}" alt="Scan this QR with WhatsApp" />`;
+      } else {
+        document.getElementById('qr-container').innerHTML = '❌ Failed to generate QR';
+      }
     }
   </script>
 </body>
