@@ -1,38 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>WhatsApp Bot Pairing</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-    img { margin-top: 20px; width: 300px; height: 300px; border: 2px solid #333; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WhatsApp Bot Pairing - Arslan MD</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#222; color:#eee; text-align:center; padding:2rem; }
+  #qr { margin-top: 20px; }
+  #status { margin-top: 15px; font-size: 1.2rem; }
+  button { padding: 10px 20px; font-size: 1.1rem; cursor:pointer; border:none; border-radius:5px; background:#00C851; color:#fff; }
+  button:disabled { background:#555; cursor:not-allowed; }
+</style>
 </head>
 <body>
-  <h1>Scan the QR Code to Pair WhatsApp Bot</h1>
-  <img id="qrImage" src="" alt="QR Code will appear here" />
-  <p id="status">Waiting for QR code...</p>
+<h1>WhatsApp Bot Pairing - Arslan MD</h1>
+<p>Click the button below to generate your WhatsApp QR code. Scan it with your WhatsApp to link.</p>
+<button id="generateBtn">Generate QR Code</button>
+<div id="status"></div>
+<div id="qr"></div>
 
-  <script>
-    async function fetchQR() {
+<script>
+  const btn = document.getElementById('generateBtn');
+  const qrDiv = document.getElementById('qr');
+  const statusDiv = document.getElementById('status');
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    qrDiv.innerHTML = '';
+    statusDiv.textContent = 'Generating QR code... Please wait.';
+    
+    try {
       const res = await fetch('/generate-qr');
+      if (!res.ok) throw new Error('Failed to get QR');
       const data = await res.json();
-      const qrImg = document.getElementById('qrImage');
-      const status = document.getElementById('status');
-
-      if (data.status && data.qr) {
-        qrImg.src = data.qr;
-        status.textContent = 'Scan this QR code with your WhatsApp app';
+      if (data.qr) {
+        const img = document.createElement('img');
+        img.src = data.qr;
+        img.alt = 'WhatsApp QR Code';
+        img.style.maxWidth = '300px';
+        qrDiv.appendChild(img);
+        statusDiv.textContent = 'Scan this QR code with WhatsApp on your phone.';
       } else {
-        status.textContent = 'QR code not available yet. Retrying...';
-        qrImg.src = '';
+        statusDiv.textContent = 'No QR received, try again.';
       }
+    } catch (err) {
+      statusDiv.textContent = 'Error: ' + err.message;
     }
-
-    // Poll every 3 seconds for QR code updates
-    setInterval(fetchQR, 3000);
-    fetchQR();
-  </script>
+    btn.disabled = false;
+  });
+</script>
 </body>
 </html>
