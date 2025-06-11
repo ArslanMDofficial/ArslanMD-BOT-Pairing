@@ -1,175 +1,91 @@
 <!DOCTYPE html>
-<html lang="en" >
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Arslan-MD WhatsApp Bot Pairing</title>
-  
+  <title>Arslan-MD - WhatsApp QR Pairing</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap');
     * {
+      margin: 0;
+      padding: 0;
       box-sizing: border-box;
     }
+
     body {
-      margin: 0;
-      height: 100vh;
-      background: linear-gradient(135deg, #1a1a1a, #121212);
-      color: #eee;
-      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #ffffff;
+      min-height: 100vh;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       flex-direction: column;
       padding: 20px;
-      text-align: center;
     }
 
     h1 {
-      font-weight: 600;
-      font-size: 2.8rem;
-      margin-bottom: 8px;
-      color: #22d3ee;
-      text-shadow: 0 0 8px #22d3eeaa;
-      letter-spacing: 2px;
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      background: linear-gradient(to right, #00c6ff, #0072ff);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    #qr-box {
+      background: #1e1e2f;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+      text-align: center;
+    }
+
+    #qr-img {
+      width: 280px;
+      height: 280px;
+      margin-bottom: 10px;
     }
 
     p {
-      font-weight: 300;
-      font-size: 1.1rem;
-      margin-bottom: 30px;
-      color: #bbb;
-    }
-
-    #qr-container {
-      background: #222;
-      border-radius: 20px;
-      padding: 30px;
-      box-shadow: 0 0 30px #22d3eeaa;
-      width: 320px;
-      height: 320px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      position: relative;
-      overflow: hidden;
-      animation: pulse 3s infinite alternate ease-in-out;
-    }
-
-    #qr-container img {
-      max-width: 280px;
-      max-height: 280px;
-      border-radius: 15px;
-      box-shadow: 0 0 20px #22d3eeaa;
-    }
-
-    @keyframes pulse {
-      0% {
-        box-shadow: 0 0 30px #22d3eeaa;
-      }
-      100% {
-        box-shadow: 0 0 60px #22d3eeff;
-      }
-    }
-
-    #reload-btn {
-      margin-top: 25px;
-      background: #22d3ee;
-      border: none;
-      color: #111;
-      font-weight: 600;
       font-size: 1rem;
-      padding: 15px 35px;
-      border-radius: 30px;
-      cursor: pointer;
-      box-shadow: 0 0 15px #22d3eecc;
-      transition: background-color 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    #reload-btn:hover {
-      background-color: #00bcd4;
-      box-shadow: 0 0 30px #00bcd4cc;
-    }
-
-    #status {
-      margin-top: 20px;
-      font-size: 1rem;
-      font-weight: 500;
-      color: #44ff77;
-      text-shadow: 0 0 8px #44ff77aa;
-      min-height: 22px;
+      color: #ccc;
     }
 
     footer {
-      margin-top: 50px;
-      font-size: 0.8rem;
-      color: #555;
-      letter-spacing: 0.5px;
-    }
-
-    /* Mobile responsive */
-    @media (max-width: 400px) {
-      #qr-container {
-        width: 90vw;
-        height: 90vw;
-        padding: 20px;
-      }
-      #qr-container img {
-        max-width: 85vw;
-        max-height: 85vw;
-      }
+      margin-top: 30px;
+      font-size: 0.9rem;
+      color: #888;
     }
   </style>
 </head>
 <body>
-  <h1>Arslan-MD WhatsApp Bot</h1>
-  <p>WhatsApp QR code scan karein apne number ko link karne ke liye.</p>
-
-  <div id="qr-container">
-    <img id="qr" src="" alt="Loading QR Code..." />
+  <h1>Scan to Pair WhatsApp</h1>
+  <div id="qr-box">
+    <p>⏳ Generating QR Code...</p>
   </div>
 
-  <button id="reload-btn">Reload QR Code</button>
-
-  <div id="status"></div>
-
-  <footer>© 2024-2025 ArslanMD Official | Developed by ChatGPT</footer>
+  <footer>
+    &copy; 2025 Arslan-MD | Powered by Baileys
+  </footer>
 
   <script>
-    const qrImg = document.getElementById('qr');
-    const reloadBtn = document.getElementById('reload-btn');
-    const statusDiv = document.getElementById('status');
-
     async function fetchQR() {
-      statusDiv.textContent = 'QR code load ho raha hai...';
       try {
-        // Server se QR base64 string fetch karo
-        const res = await fetch('/qr');
-        const html = await res.text();
+        const res = await fetch('/get-qr');
+        const data = await res.json();
+        const box = document.getElementById('qr-box');
 
-        // Humare server wala QR image <img> tag mein hai, usko extract karte hain
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const img = doc.querySelector('img');
-        if (!img) throw new Error('QR code nahi mila server se.');
-
-        qrImg.src = img.src;
-        statusDiv.textContent = 'QR code tayar hai, WhatsApp app se scan karein.';
+        if (data.success) {
+          box.innerHTML = `<img id="qr-img" src="${data.qr}" alt="QR Code"><p>📱 Scan this with WhatsApp</p>`;
+        } else {
+          box.innerHTML = `<p>⏳ ${data.message}...</p>`;
+          setTimeout(fetchQR, 3000);
+        }
       } catch (err) {
-        statusDiv.textContent = '❌ QR code load nahi hua, thodi der baad dobara koshish karein.';
-        qrImg.src = '';
-        console.error(err);
+        document.getElementById('qr-box').innerHTML = `<p>❌ Failed to fetch QR. Try again.</p>`;
       }
     }
 
-    reloadBtn.addEventListener('click', () => {
-      fetchQR();
-    });
-
-    // Page load par QR code fetch karo
     fetchQR();
-
-    // 60 second baad QR code automatically reload karo (QR expire hota hai)
-    setInterval(fetchQR, 60000);
   </script>
 </body>
 </html>
