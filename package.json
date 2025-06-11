@@ -1,14 +1,19 @@
 {
-  "name": "arslan-md-pairing",
+  "name": "arslan-md-public-pairing",
   "version": "1.0.0",
+  "description": "Public QR-based WhatsApp bot pairing using Baileys",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.4",
-    "express": "^4.18.2",
-    "fs-extra": "^11.1.1",
+    "@whiskeysockets/baileys": "^6.7.1",
+    "@hapi/boom": "^10.0.1",
+    "express": "^4.18.4",
+    "fs-extra": "^11.2.0",
     "qrcode": "^1.5.1"
   }
 }
