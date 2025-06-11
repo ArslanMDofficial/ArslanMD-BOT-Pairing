@@ -1,47 +1,48 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Arslan-MD Bot Pairing</title>
+  <meta charset="UTF-8" />
+  <title>Arslan-MD QR Pairing</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
+      font-family: sans-serif;
       background: #111;
       color: #fff;
+      text-align: center;
+      padding: 50px;
     }
-    .container {
-      margin-top: 80px;
+    .qr-box {
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      display: inline-block;
+      margin-top: 30px;
     }
     button {
-      padding: 12px 20px;
-      font-size: 18px;
-      background: #28a745;
-      color: white;
+      padding: 10px 20px;
       border: none;
-      border-radius: 10px;
+      background: #00e676;
+      color: #000;
+      font-weight: bold;
       cursor: pointer;
-    }
-    iframe {
-      margin-top: 30px;
-      border: none;
-      width: 350px;
-      height: 400px;
-      border-radius: 12px;
-      box-shadow: 0 0 20px #28a745;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🔗 Arslan-MD QR Pairing</h1>
-    <p>QR Code generate karne ke liye button dabayein:</p>
-    <button onclick="loadQR()">Generate QR Code</button>
-    <div id="qr-box"></div>
-  </div>
+  <h1>🤖 Arslan-MD WhatsApp Bot</h1>
+  <p>Click below to generate QR and scan with WhatsApp.</p>
+  <button onclick="loadQR()">Generate QR</button>
+  <div class="qr-box" id="qrBox"></div>
 
   <script>
     function loadQR() {
-      document.getElementById("qr-box").innerHTML = '<iframe src="/qr"></iframe>';
+      document.getElementById("qrBox").innerHTML = "⏳ Loading QR...";
+      fetch("/qr")
+        .then((res) => res.text())
+        .then((html) => {
+          document.getElementById("qrBox").innerHTML = html;
+        });
     }
   </script>
 </body>
