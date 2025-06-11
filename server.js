@@ -1,24 +1,23 @@
 const express = require('express');
-const qrcode = require('qrcode');
-const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
-const path = require('path');
 const fs = require('fs-extra');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { Boom } = require('@hapi/boom');
+const QRCode = require('qrcode');
+const path = require('path');
 
 const app = express();
-const PORT = 10000;
+const PORT = process.env.PORT || 10000;
 
-app.use(express.static(path.join(__dirname, 'public')));
+const SESSIONS_DIR = path.join(__dirname, 'sessions', 'arslan-md');
 
-// Ensure sessions directory exists
-const SESSIONS_DIR = path.join(__dirname, 'sessions');
+// یہ فولڈر بنائے گا اگر موجود نہیں
 fs.ensureDirSync(SESSIONS_DIR);
 
-let sock;
-let qrCodeDataUrl = '';
+let sock; // WhatsApp ساکٹ یہاں اسٹور ہوگا
 
+// WhatsApp کنکشن فنکشن
 async function startWhatsApp() {
-  // Use Multi File Auth State (session stored in sessions/arslan-md)
-  const { state, saveCreds } = await useMultiFileAuthState(path.join(SESSIONS_DIR, 'arslan-md'));
+  const { state, saveCreds } = await useMultiFileAuthState(SESSIONS_DIR);
 
   sock = makeWASocket({
     auth: state,
@@ -27,32 +26,66 @@ async function startWhatsApp() {
 
   sock.ev.on('connection.update', async (update) => {
     const { connection, qr } = update;
+
     if (qr) {
-      // Generate base64 QR image
-      qrCodeDataUrl = await qrcode.toDataURL(qr);
-      console.log('QR Code updated');
+      // QR کو base64 میں تبدیل کر کے اسٹور کریں
+      global.qrImage = await QRCode.toDataURL(qr);
+      console.log('📱 QR Code generated.');
     }
+
+    if (connection === 'open') {
+      console.log('✅ WhatsApp connected.');
+
+      const number = sock.user.id.split(':')[0];
+      const credsPath = path.join(SESSIONS_DIR, 'creds.json');
+
+      if (fs.existsSync(credsPath)) {
+        const buffer = fs.readFileSync(credsPath);
+
+        await sock.sendMessage(number + '@s.whatsapp.net', {
+          document: buffer,
+          mimetype: 'application/json',
+          fileName: 'creds.json',
+          caption: '*🤖 Arslan-MD Bot Connected Successfully!*\n\nHere is your `creds.json` file. Paste it in your bot to get started.',
+        });
+
+        console.log(`📤 creds.json sent to ${number}`);
+      }
+    }
+
     if (connection === 'close') {
-      console.log('Connection closed, reconnecting...');
-      startWhatsApp();
-    } else if (connection === 'open') {
-      console.log('WhatsApp connected!');
-      qrCodeDataUrl = ''; // Clear QR code after connect
+      const shouldReconnect = (update.lastDisconnect.error = new Boom(update.lastDisconnect?.error))?.output?.statusCode !== DisconnectReason.loggedOut;
+      console.log('❌ Connection closed. Reconnecting:', shouldReconnect);
+      if (shouldReconnect) {
+        startWhatsApp();
+      }
     }
   });
 
   sock.ev.on('creds.update', saveCreds);
 }
 
-// API route to get QR code image as base64
-app.get('/generate-qr', (req, res) => {
-  if (!qrCodeDataUrl) {
-    return res.json({ status: false, message: 'QR code not generated yet' });
+// Start the WhatsApp connection
+startWhatsApp().catch(console.error);
+
+// ✅ API route to get QR code
+app.get('/generate-qr', async (req, res) => {
+  try {
+    if (!global.qrImage) {
+      return res.status(404).send('QR not ready yet, please refresh after few seconds.');
+    }
+    const img = Buffer.from(global.qrImage.split(',')[1], 'base64');
+    res.writeHead(200, {
+      'Content-Type': 'image/png',
+      'Content-Length': img.length,
+    });
+    res.end(img);
+  } catch (err) {
+    console.error('[ERROR] /generate-qr route error:', err);
+    res.status(500).send('Failed to generate QR');
   }
-  res.json({ status: true, qr: qrCodeDataUrl });
 });
 
 app.listen(PORT, () => {
   console.log(`🌐 Server running at http://localhost:${PORT}`);
-  startWhatsApp();
 });
