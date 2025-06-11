@@ -1,53 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>WhatsApp Bot Pairing - Arslan MD</title>
-<style>
-  body { font-family: Arial, sans-serif; background:#222; color:#eee; text-align:center; padding:2rem; }
-  #qr { margin-top: 20px; }
-  #status { margin-top: 15px; font-size: 1.2rem; }
-  button { padding: 10px 20px; font-size: 1.1rem; cursor:pointer; border:none; border-radius:5px; background:#00C851; color:#fff; }
-  button:disabled { background:#555; cursor:not-allowed; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>🤖 Arslan-MD Bot Pairing</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      padding: 40px;
+    }
+    h1 {
+      color: #38bdf8;
+      font-size: 2em;
+    }
+    #qr {
+      margin-top: 30px;
+      border: 10px solid #1e293b;
+      padding: 10px;
+      border-radius: 15px;
+      background: #ffffff;
+    }
+    #refresh-btn {
+      margin-top: 20px;
+      background: #1d4ed8;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+    #refresh-btn:hover {
+      background: #2563eb;
+    }
+    .footer {
+      margin-top: 50px;
+      font-size: 0.9em;
+      color: #94a3b8;
+    }
+  </style>
 </head>
 <body>
-<h1>WhatsApp Bot Pairing - Arslan MD</h1>
-<p>Click the button below to generate your WhatsApp QR code. Scan it with your WhatsApp to link.</p>
-<button id="generateBtn">Generate QR Code</button>
-<div id="status"></div>
-<div id="qr"></div>
+  <h1>🔗 Scan to Pair Your WhatsApp</h1>
+  <p>Scan this QR code using your WhatsApp to link the Arslan-MD Bot.</p>
+  <img id="qr" src="/generate-qr" width="300" height="300" alt="QR Code" />
+  <br>
+  <button id="refresh-btn" onclick="refreshQR()">♻️ Refresh QR</button>
 
-<script>
-  const btn = document.getElementById('generateBtn');
-  const qrDiv = document.getElementById('qr');
-  const statusDiv = document.getElementById('status');
+  <div class="footer">
+    <p>Made with ❤️ for Arslan-MD</p>
+  </div>
 
-  btn.addEventListener('click', async () => {
-    btn.disabled = true;
-    qrDiv.innerHTML = '';
-    statusDiv.textContent = 'Generating QR code... Please wait.';
-    
-    try {
-      const res = await fetch('/generate-qr');
-      if (!res.ok) throw new Error('Failed to get QR');
-      const data = await res.json();
-      if (data.qr) {
-        const img = document.createElement('img');
-        img.src = data.qr;
-        img.alt = 'WhatsApp QR Code';
-        img.style.maxWidth = '300px';
-        qrDiv.appendChild(img);
-        statusDiv.textContent = 'Scan this QR code with WhatsApp on your phone.';
-      } else {
-        statusDiv.textContent = 'No QR received, try again.';
-      }
-    } catch (err) {
-      statusDiv.textContent = 'Error: ' + err.message;
+  <script>
+    function refreshQR() {
+      const qrImg = document.getElementById('qr');
+      qrImg.src = '/generate-qr?' + new Date().getTime(); // Force reload with new QR
     }
-    btn.disabled = false;
-  });
-</script>
+  </script>
 </body>
 </html>
