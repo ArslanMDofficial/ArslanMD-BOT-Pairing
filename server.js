@@ -9,13 +9,13 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 const SESSIONS_DIR = path.join(__dirname, 'sessions', 'arslan-md');
-
-// یہ فولڈر بنائے گا اگر موجود نہیں
 fs.ensureDirSync(SESSIONS_DIR);
 
-let sock; // WhatsApp ساکٹ یہاں اسٹور ہوگا
+// Static folder setup (yahan apna frontend folder set karo, for example 'public')
+app.use(express.static(path.join(__dirname, 'public')));
 
-// WhatsApp کنکشن فنکشن
+let sock; // WhatsApp socket
+
 async function startWhatsApp() {
   const { state, saveCreds } = await useMultiFileAuthState(SESSIONS_DIR);
 
@@ -25,10 +25,9 @@ async function startWhatsApp() {
   });
 
   sock.ev.on('connection.update', async (update) => {
-    const { connection, qr } = update;
+    const { connection, qr, lastDisconnect } = update;
 
     if (qr) {
-      // QR کو base64 میں تبدیل کر کے اسٹور کریں
       global.qrImage = await QRCode.toDataURL(qr);
       console.log('📱 QR Code generated.');
     }
@@ -54,7 +53,7 @@ async function startWhatsApp() {
     }
 
     if (connection === 'close') {
-      const shouldReconnect = (update.lastDisconnect.error = new Boom(update.lastDisconnect?.error))?.output?.statusCode !== DisconnectReason.loggedOut;
+      const shouldReconnect = (lastDisconnect?.error && new Boom(lastDisconnect.error).output?.statusCode !== DisconnectReason.loggedOut);
       console.log('❌ Connection closed. Reconnecting:', shouldReconnect);
       if (shouldReconnect) {
         startWhatsApp();
@@ -65,10 +64,10 @@ async function startWhatsApp() {
   sock.ev.on('creds.update', saveCreds);
 }
 
-// Start the WhatsApp connection
+// Start WhatsApp
 startWhatsApp().catch(console.error);
 
-// ✅ API route to get QR code
+// QR code route to serve QR as PNG image
 app.get('/generate-qr', async (req, res) => {
   try {
     if (!global.qrImage) {
@@ -84,6 +83,11 @@ app.get('/generate-qr', async (req, res) => {
     console.error('[ERROR] /generate-qr route error:', err);
     res.status(500).send('Failed to generate QR');
   }
+});
+
+// Root route serve index.html explicitly (optional, express.static might handle it)
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(PORT, () => {
