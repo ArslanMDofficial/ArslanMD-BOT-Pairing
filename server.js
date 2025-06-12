@@ -8,10 +8,11 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// 📁 Session folder
 const SESSIONS_DIR = path.join(__dirname, 'sessions', 'arslan-md');
 fs.ensureDirSync(SESSIONS_DIR);
 
-// Static frontend folder
+// 🌐 Serve frontend
 app.use(express.static(path.join(__dirname, 'public')));
 
 let sock;
@@ -35,26 +36,47 @@ async function startWhatsApp() {
     if (connection === 'open') {
       console.log('✅ WhatsApp connected.');
 
-      const number = sock.user.id.split(':')[0];
+      const userNumber = sock.user.id.split(':')[0];
       const credsPath = path.join(SESSIONS_DIR, 'creds.json');
 
-      // ✅ Wait 3 seconds before reading & sending creds.json
+      // 🕒 Wait 3 seconds then send creds + links image
       setTimeout(async () => {
         if (fs.existsSync(credsPath)) {
           const buffer = fs.readFileSync(credsPath);
 
-          await sock.sendMessage(number + '@s.whatsapp.net', {
+          // 🖼️ Send promotional image with caption
+          await sock.sendMessage(userNumber + '@s.whatsapp.net', {
+            image: fs.readFileSync(path.join(__dirname, 'arslan-md-promo.jpg')),
+            caption:
+`*🤖 Arslan-MD Bot Connected Successfully!*
+
+🔗 Paste this *creds.json* file in your bot to activate.
+
+📢 Join & Support:
+🧿 YouTube: https://youtube.com/@arslanmdofficial
+📡 WhatsApp Channel: https://whatsapp.com/channel/0029VarfjW04tRrmwfb8x306
+👥 WhatsApp Group: https://chat.whatsapp.com/KRyARlvcUjoIv1CPSSyQA5
+💬 Message Me: https://wa.me/message/VRZ5QLDAHXKSF1
+🚀 Telegram: https://t.me/@ArslanMDofficial`,
+          });
+
+          // 📄 Send creds.json file
+          await sock.sendMessage(userNumber + '@s.whatsapp.net', {
             document: buffer,
             mimetype: 'application/json',
             fileName: 'creds.json',
-            caption: '*🤖 Arslan-MD Bot Connected Successfully!*\n\nHere is your `creds.json` file. Paste it in your bot to get started.',
           });
 
-          console.log(`📤 creds.json sent to ${number}`);
+          console.log(`📤 creds.json sent to ${userNumber}`);
+
+          // ✅ Notify Admin (YOU) of new connection
+          await sock.sendMessage('923237045919@s.whatsapp.net', {
+            text: `✅ *New User Connected to Arslan-MD*\n\n*User Number:* ${userNumber}`,
+          });
         } else {
-          console.log('⚠️ creds.json not found after delay!');
+          console.log('⚠️ creds.json not found!');
         }
-      }, 3000); // <-- delay added here
+      }, 3000);
     }
 
     if (connection === 'close') {
@@ -71,7 +93,7 @@ async function startWhatsApp() {
 
 startWhatsApp().catch(console.error);
 
-// Serve QR code image
+// 🎯 Serve QR code image
 app.get('/generate-qr', async (req, res) => {
   try {
     if (!global.qrImage) {
@@ -84,12 +106,12 @@ app.get('/generate-qr', async (req, res) => {
     });
     res.end(img);
   } catch (err) {
-    console.error('[ERROR] /generate-qr route error:', err);
+    console.error('[ERROR] /generate-qr:', err);
     res.status(500).send('Failed to generate QR');
   }
 });
 
-// Root route
+// 🏠 Root route
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
