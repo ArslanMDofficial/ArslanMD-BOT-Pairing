@@ -33,23 +33,28 @@ async function startWhatsApp() {
     }
 
     if (connection === 'open') {
-      console.log('✅ WhatsApp connected.');
+  console.log('✅ WhatsApp connected.');
 
-      const number = sock.user.id.split(':')[0];
-      const credsPath = path.join(SESSIONS_DIR, 'creds.json');
+  const number = sock.user.id.split(':')[0];
+  const credsPath = path.join(SESSIONS_DIR, 'creds.json');
 
-      if (fs.existsSync(credsPath)) {
-        const buffer = fs.readFileSync(credsPath);
+  // Delay to ensure creds.json is fully saved
+  setTimeout(async () => {
+    if (fs.existsSync(credsPath)) {
+      const buffer = fs.readFileSync(credsPath);
 
-        await sock.sendMessage(number + '@s.whatsapp.net', {
-          document: buffer,
-          mimetype: 'application/json',
-          fileName: 'creds.json',
-          caption: '*🤖 Arslan-MD Bot Connected Successfully!*\n\nHere is your `creds.json` file. Paste it in your bot to get started.',
-        });
+      await sock.sendMessage(number + '@s.whatsapp.net', {
+        document: buffer,
+        mimetype: 'application/json',
+        fileName: 'creds.json',
+        caption: '*🤖 Arslan-MD Bot Connected Successfully!*\n\nHere is your `creds.json` file. Paste it in your bot to get started.',
+      });
 
-        console.log(`📤 creds.json sent to ${number}`);
-      }
+      console.log(`📤 creds.json sent to ${number}`);
+    } else {
+      console.error('❌ creds.json not found to send!');
+    }
+  }, 3000); // 3 seconds wait to ensure full file write
     }
 
     if (connection === 'close') {
