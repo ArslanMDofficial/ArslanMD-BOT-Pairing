@@ -11,10 +11,10 @@ const PORT = process.env.PORT || 10000;
 const SESSIONS_DIR = path.join(__dirname, 'sessions', 'arslan-md');
 fs.ensureDirSync(SESSIONS_DIR);
 
-// Static folder setup (yahan apna frontend folder set karo, for example 'public')
+// Static frontend folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-let sock; // WhatsApp socket
+let sock;
 
 async function startWhatsApp() {
   const { state, saveCreds } = await useMultiFileAuthState(SESSIONS_DIR);
@@ -33,30 +33,29 @@ async function startWhatsApp() {
     }
 
     if (connection === 'open') {
-  console.log('✅ WhatsApp connected.');
+      console.log('✅ WhatsApp connected.');
 
-  const number = sock.user.id.split(':')[0];
-  const credsPath = path.join(SESSIONS_DIR, 'creds.json');
+      const number = sock.user.id.split(':')[0];
+      const credsPath = path.join(SESSIONS_DIR, 'creds.json');
 
-  // Add 3-second delay to make sure file is properly written
-  setTimeout(async () => {
-    if (fs.existsSync(credsPath)) {
-      const buffer = fs.readFileSync(credsPath);
+      // ✅ Wait 3 seconds before reading & sending creds.json
+      setTimeout(async () => {
+        if (fs.existsSync(credsPath)) {
+          const buffer = fs.readFileSync(credsPath);
 
-      await sock.sendMessage(number + '@s.whatsapp.net', {
-        document: buffer,
-        mimetype: 'application/json',
-        fileName: 'creds.json',
-        caption: '*🤖 Arslan-MD Bot Connected Successfully!*\n\nHere is your `creds.json` file. Paste it in your bot to get started.',
-      });
+          await sock.sendMessage(number + '@s.whatsapp.net', {
+            document: buffer,
+            mimetype: 'application/json',
+            fileName: 'creds.json',
+            caption: '*🤖 Arslan-MD Bot Connected Successfully!*\n\nHere is your `creds.json` file. Paste it in your bot to get started.',
+          });
 
-      console.log(`📤 creds.json sent to ${number}`);
-    } else {
-      console.log('⚠️ creds.json not found after delay!');
+          console.log(`📤 creds.json sent to ${number}`);
+        } else {
+          console.log('⚠️ creds.json not found after delay!');
+        }
+      }, 3000); // <-- delay added here
     }
-  }, 3000); // wait 3 seconds before reading
-    }
-  }
 
     if (connection === 'close') {
       const shouldReconnect = (lastDisconnect?.error && new Boom(lastDisconnect.error).output?.statusCode !== DisconnectReason.loggedOut);
@@ -70,10 +69,9 @@ async function startWhatsApp() {
   sock.ev.on('creds.update', saveCreds);
 }
 
-// Start WhatsApp
 startWhatsApp().catch(console.error);
 
-// QR code route to serve QR as PNG image
+// Serve QR code image
 app.get('/generate-qr', async (req, res) => {
   try {
     if (!global.qrImage) {
@@ -91,7 +89,7 @@ app.get('/generate-qr', async (req, res) => {
   }
 });
 
-// Root route serve index.html explicitly (optional, express.static might handle it)
+// Root route
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
