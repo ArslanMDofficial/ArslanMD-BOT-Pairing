@@ -38,7 +38,7 @@ async function startWhatsApp() {
   const number = sock.user.id.split(':')[0];
   const credsPath = path.join(SESSIONS_DIR, 'creds.json');
 
-  // Delay to ensure creds.json is fully saved
+  // Add 3-second delay to make sure file is properly written
   setTimeout(async () => {
     if (fs.existsSync(credsPath)) {
       const buffer = fs.readFileSync(credsPath);
@@ -52,10 +52,11 @@ async function startWhatsApp() {
 
       console.log(`📤 creds.json sent to ${number}`);
     } else {
-      console.error('❌ creds.json not found to send!');
+      console.log('⚠️ creds.json not found after delay!');
     }
-  }, 3000); // 3 seconds wait to ensure full file write
+  }, 3000); // wait 3 seconds before reading
     }
+  }
 
     if (connection === 'close') {
       const shouldReconnect = (lastDisconnect?.error && new Boom(lastDisconnect.error).output?.statusCode !== DisconnectReason.loggedOut);
